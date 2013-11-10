@@ -38,6 +38,40 @@ var SaverBot = {
 
     },
 
+    onPriceData: function(data, tabletop) { 
+
+        // Create a product for each row
+        var products = _.map(data, function(item) {
+            return new SaverBotProduct(item, this.stores);
+        }, this)
+
+        // Include only products that have at least one price
+        this.items = _.filter(products, function(item) {
+            return item.hasPrices();   
+        }, this);
+
+        // Group by product types
+        var productTypes = _.groupBy(_.filter(this.items, function(item) { return item.producttype }), "producttype")
+
+        // Create a product type for each group
+        this.productTypes = _.map(productTypes, function(products, name) {
+            return new SaverBotProductType(name, products);
+        }) 
+
+        this.productTypes = _.sortBy(this.productTypes, "name");
+
+        _.each(this.productTypes, function(type) {
+            // console.log( type.name, type.lowestUnitPrice() );
+        })
+
+        var data = {
+          results: this.typeByType()  
+        } 
+
+        $(".results-display").html( this.templates.storeList.render(data) );
+
+    },
+
     compileTemplates: function() {
         var templates = this.templates;
         $(".template").each(function() {
@@ -47,17 +81,26 @@ var SaverBot = {
         });
     },
 
-    onPriceData: function(data, tabletop) { 
-        this.items = _.map(data, function(item) {
-            return new SaverBotItem(item, this.stores);
-        }, this);
-        var data = {
-          results: this.itemByItem()  
-        } 
-        $(".results-display").html( this.templates.storeList.render(data) );
+    optimize: function() {
+
     },
 
-    optimize: function() {
+    typeByType: function(productTypes) {
+
+        if (!productTypes) productTypes = this.productTypes;
+
+        var groups = _.groupBy(productTypes, function(productType) {
+            var store = productType.lowestUnitPrice();
+            productType.lowestUnitPriceDisplay = store.lowestUnitPriceDisplay;
+            return store.lowestUnitPrice().store_key;
+        })
+
+        return _.map(groups, function(group, store_key) {
+            return {
+                store: _.findWhere(this.stores, { store_key: store_key }),
+                items: group
+            }
+        }, this);
 
     },
 
@@ -87,16 +130,48 @@ var SaverBot = {
 
 }
 
-var SaverBotItem = function(item, stores) {
+var SaverBotProductType = function(name, products) {
+
+    this.name = name;
+    this.products = [];
+
+    this.init = function() {
+        _.bindAll(this, "addProduct");
+        this.addProducts(products);
+    }
+
+    this.addProduct = function(product) {
+        this.products.push(product);
+    }
+
+    this.addProducts = function(products) {
+        _.each(products, this.addProduct)
+    }
+
+    this.lowestUnitPrice = function() {
+        var product = _.min(this.products, function(product) {
+            return product.lowestUnitPrice().unitPrice;
+        });
+        return product;
+    }
+
+    this.init();
+
+}
+
+var SaverBotProduct = function(item, stores) {
 
     this.debug = false;
 
     this.init = function() {
         _.extend(this, item);
         this.stores = _.filter(stores, function(store) {
-            // console.log( item.name, store.key, this.price(store.key) );
             return this.price(store.store_key);
         }, this);
+    }
+
+    this.hasPrices = function() {
+        return this.stores.length;
     }
 
     this.price = function(store) {
@@ -128,16 +203,7 @@ var SaverBotItem = function(item, stores) {
         var store = _.min(this.stores, function(store) {
             return this.unitPrice(store.store_key);
         }, this);
-        return _.extend({ 
-            unitPrice: this.unitPrice(store.store_key)
-        }, store);
-    }
-
-    this.lowestUnitPrice = function() {
-        if (this.stores.length == 0) return false;
-        var store = _.min(this.stores, function(store) {
-            return this.unitPrice(store.store_key);
-        }, this);
+        this.lowestUnitPriceDisplay = numeral(this.unitPrice(store.store_key)).format('$0,0.00'); 
         return _.extend({ 
             unitPrice: this.unitPrice(store.store_key),
             unitPriceDisplay: numeral(this.unitPrice(store.store_key)).format('$0,0.00')
