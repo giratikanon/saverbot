@@ -294,8 +294,52 @@ module.exports = function (grunt) {
                 'svgmin',
                 'htmlmin'
             ]
-        }
+        },
+        aws: grunt.file.readJSON('grunt-aws.json'),
+        s3: {
+            options: {
+              key: '<%= aws.key %>',
+              secret: '<%= aws.secret %>',
+              bucket: '<%= aws.bucket %>',
+              access: 'public-read',
+              // debug: true,
+              headers: {
+                // Two Year cache policy (1000 * 60 * 60 * 24 * 730)
+                "Cache-Control": "max-age=60, public",
+                "Expires": new Date(Date.now() + 60).toUTCString()
+              }
+            },
+            dev: {
+              // These options override the defaults
+              options: {
+                encodePaths: true,
+                maxOperations: 20,
+                // debug: true
+              },
+              // Files to be uploaded.
+              upload: [
+                {
+                  src: 'dist/scripts/*.js',
+                  dest: 'saverbot/scripts/',
+                  options: { gzip: true }
+                },
+                {
+                  src: 'dist/styles/*.css',
+                  dest: 'saverbot/styles/',
+                  options: { gzip: true }
+                },
+                {
+                  src: 'dist/index.html',
+                  dest: 'saverbot/index.html',
+                  options: { gzip: true }
+                },
+              ]
+            }
+
+        } // End s3
     });
+
+    // grunt.loadNpmTasks('grunt-s3');
 
     grunt.registerTask('serve', function (target) {
         if (target === 'dist') {
@@ -343,4 +387,8 @@ module.exports = function (grunt) {
         'test',
         'build'
     ]);
+
+    // grunt.registerTask('s3', [
+    //     's3'
+    // ])
 };
