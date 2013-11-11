@@ -8,4 +8,5 @@ TODOS
 * Create sum view that actually adds up your total costs
 * Specify limits/restrictions/discounts, like Fresh Direct coupon
 * Organize data
-    * Specify standard, human-friendly units, like pounds instead of ounces
+* Cache data through Heroku?
+* Creating A/B/C/D/F grade system with color scheme

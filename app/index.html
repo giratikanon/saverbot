@@ -28,7 +28,7 @@
 
 			<div class="header">
 				<h1>Saver Bot</h1>
-				<p>Currently shows cheapest place to buy each item.</p>
+				<p>Where to buy stuff</p>
 				<!-- <ul class="nav nav-pills pull-right">
 					<li class="active"><a href="#">Home</a></li>
 					<li><a href="#">About</a></li>
@@ -68,6 +68,9 @@
 		</div>
 
 		<script id="template-storeList" class="template" type="html/template">
+			{{#summary}}
+				Total cost is {{totalCost}}.
+			{{/summary}}
 			{{#results}}
 				<div class="result-group">
 					<h3>{{store.store_name}}</h3>
@@ -75,7 +78,8 @@
 						<thead>
 							<tr>
 								<th>Item</th>
-								<th>Price per unit</th>
+								<th class="col-price">Price</th>
+								<th  class="col-unit"></th>
 							</tr>
 						</thead>
 						{{#items}}
@@ -83,6 +87,14 @@
 							<tr>
 								<td class="td col-name">{{name}}</td>
 								<td class="td col-price">{{lowestUnitPriceDisplay}}</td>
+								<td class="td col-unit">
+									{{#lowestUnitPrice.unitname}}
+										{{lowestUnitPrice.unitname}}
+									{{/lowestUnitPrice.unitname}}
+									{{^lowestUnitPrice.unitname}}
+										each
+									{{/lowestUnitPrice.unitname}}
+								</td>
 							</tr>
 						</tbody>
 						{{/items}}

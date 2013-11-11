@@ -5,6 +5,15 @@
 
     ===================================== */
 
+_.mixin({
+  sum: function(list, property) {
+    return _.reduce(list,function(memo, item){ 
+        if (property) return memo + +item[property]
+        return memo + +item; 
+    }, 0);
+  }
+})
+
 var SaverBot = {
 
     stores: [
@@ -19,6 +28,10 @@ var SaverBot = {
         {
             store_key: "undefined",
             store_name: "No store"
+        },
+        {
+            store_key: "target",
+            store_name: "Target"
         }
     ],
 
@@ -27,7 +40,7 @@ var SaverBot = {
     init: function(options) {
 
         _.extend(this, options);
-        _.bindAll(this, "onPriceData", "itemByItem", "compileTemplates");
+        _.bindAll(this, "onPriceData", "typeByType", "compileTemplates");
         this.compileTemplates();
 
         Tabletop.init({ 
@@ -64,8 +77,19 @@ var SaverBot = {
             // console.log( type.name, type.lowestUnitPrice() );
         })
 
+        var results = this.typeByType();
+
+        var items = _.flatten(_.pluck(results, "items"));
+
+        var sum = _.sum(items, "lowestUnitPriceNumeric");
+        console.log(sum);
+        // console.log(items)
+
         var data = {
-          results: this.typeByType()  
+          summary: {
+            totalCost: numeral(sum).format('$0,0.00')
+          },
+          results: results
         } 
 
         $(".results-display").html( this.templates.storeList.render(data) );
@@ -85,13 +109,18 @@ var SaverBot = {
 
     },
 
+    // Simplest strategy: Find the cheapest place to get each type of item
+
     typeByType: function(productTypes) {
 
         if (!productTypes) productTypes = this.productTypes;
 
         var groups = _.groupBy(productTypes, function(productType) {
-            var store = productType.lowestUnitPrice();
+            var store = productType.getLowestUnitPrice();
+            productType.lowestUnitPrice = store;
+            console.log(store);
             productType.lowestUnitPriceDisplay = store.lowestUnitPriceDisplay;
+            productType.lowestUnitPriceNumeric = store.lowestUnitPrice().unitPrice;
             return store.lowestUnitPrice().store_key;
         })
 
@@ -102,31 +131,31 @@ var SaverBot = {
             }
         }, this);
 
-    },
+    }
 
     // Simple algorithm: Find the cheapest place to get each item
 
-    itemByItem: function(items) {
+    // itemByItem: function(items) {
 
-        if (!items) items = this.items;
+    //     if (!items) items = this.items;
 
-        var groups = _.groupBy(items, function(item) {
-            var store = item.lowestUnitPrice();
-            item.lowestUnitPrice = store.unitPrice;
-            item.lowestUnitPriceDisplay = store.unitPriceDisplay;
-            return store.store_key;
-        })
+    //     var groups = _.groupBy(items, function(item) {
+    //         var store = item.lowestUnitPrice();
+    //         item.lowestUnitPrice = store.unitPrice;
+    //         item.lowestUnitPriceDisplay = store.unitPriceDisplay;
+    //         return store.store_key;
+    //     })
 
-        delete groups["undefined"];
+    //     delete groups["undefined"];
 
-        return _.map(groups, function(group, store_key) {
-            return {
-                store: _.findWhere(this.stores, { store_key: store_key }),
-                items: group
-            }
-        }, this);
+    //     return _.map(groups, function(group, store_key) {
+    //         return {
+    //             store: _.findWhere(this.stores, { store_key: store_key }),
+    //             items: group
+    //         }
+    //     }, this);
 
-    }
+    // }
 
 }
 
@@ -148,7 +177,7 @@ var SaverBotProductType = function(name, products) {
         _.each(products, this.addProduct)
     }
 
-    this.lowestUnitPrice = function() {
+    this.getLowestUnitPrice = function() {
         var product = _.min(this.products, function(product) {
             return product.lowestUnitPrice().unitPrice;
         });
