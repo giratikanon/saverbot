@@ -19,7 +19,12 @@ var SaverBot = {
     stores: [
         {
             store_key: "freshdirect",
-            store_name: "FreshDirect"
+            store_name: "FreshDirect",
+            discounts: {
+                "50off125": function(types) {
+                    
+                }
+            }
         },
         {
             store_key: "costco",
@@ -32,6 +37,10 @@ var SaverBot = {
         {
             store_key: "target",
             store_name: "Target"
+        },
+        {
+            store_key: "amazon",
+            store_name: "Amazon"
         }
     ],
 
@@ -73,17 +82,17 @@ var SaverBot = {
 
         this.productTypes = _.sortBy(this.productTypes, "name");
 
-        _.each(this.productTypes, function(type) {
-            // console.log( type.name, type.lowestUnitPrice() );
-        })
+        // FRESH DIRECT STRATEGY
+
+
+
+        // TYPE BY TYPE STRATEGY
 
         var results = this.typeByType();
 
         var items = _.flatten(_.pluck(results, "items"));
 
         var sum = _.sum(items, "lowestUnitPriceNumeric");
-        console.log(sum);
-        // console.log(items)
 
         var data = {
           summary: {
@@ -106,6 +115,12 @@ var SaverBot = {
     },
 
     optimize: function() {
+
+    },
+
+    freshdirectSave50: function(productTypes) {
+
+
 
     },
 
